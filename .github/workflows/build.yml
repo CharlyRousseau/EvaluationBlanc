@@ -24,11 +24,11 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/charlyrousseau/EvaluationBlanc:${{ github.sha }} .
-          docker tag ghcr.io/charlyrousseau/EvaluationBlanc:${{ github.sha }} ghcr.io/charlyrousseau/EvaluationBlanc:latest
+          docker build -t ghcr.io/charlyrousseau/evaluationblanc:${{ github.sha }} .
+          docker tag ghcr.io/charlyrousseau/evaluationblanc:${{ github.sha }} ghcr.io/charlyrousseau/evaluationblanc:latest
 
       - name: Push Docker image
         if: github.ref == 'refs/heads/main'
         run: |
-          docker push ghcr.io/charlyrousseau/EvaluationBlanc:${{ github.sha }}
-          docker push ghcr.io/charlyrousseau/EvaluationBlanc:latest
+          docker push ghcr.io/charlyrousseau/evaluationblanc:${{ github.sha }}
+          docker push ghcr.io/charlyrousseau/evaluationblanc:latest
