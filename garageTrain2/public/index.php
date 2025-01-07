@@ -1,33 +1,31 @@
 <?php
 session_start();
-require_once('database/db.php');
-require_once('security/connexion.php');
 
-if(isTokenValid($_SESSION['token'])){
+require_once "../src/database/db.php";
+require_once "../src/security/connexion.php";
+
+if (isTokenValid($_SESSION["token"])) {
     header("Location: /dashboard.php");
 }
 $error = false;
-$requestMethod = $_SERVER['REQUEST_METHOD'];
+$requestMethod = $_SERVER["REQUEST_METHOD"];
 
-    if($requestMethod == 'GET' && $_GET['sub'] == "true"){
-            if(isset($_GET['mail']) && isset($_GET['pass'])){
-                $logUser = loginWithToken($_GET['mail'], $_GET['pass']);
-                if($logUser){
-                    $_SESSION['token'] = $logUser;
-                    header("Location: dashboard.php");
-                }
-                else{
-                    $error = "Connexion impossible, utilisateur non-authentifié";
-                }
-            }
-            else {
-                $error = "Un champ de connexion manquant";
-            }
+if ($requestMethod == "GET" && $_GET["sub"] == "true") {
+    if (isset($_GET["mail"]) && isset($_GET["pass"])) {
+        $logUser = loginWithToken($_GET["mail"], $_GET["pass"]);
+        if ($logUser) {
+            $_SESSION["token"] = $logUser;
+            header("Location: dashboard.php");
+        } else {
+            $error = "Connexion impossible, utilisateur non-authentifié";
+        }
+    } else {
+        $error = "Un champ de connexion manquant";
     }
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
@@ -39,14 +37,10 @@ $requestMethod = $_SERVER['REQUEST_METHOD'];
 
 <body>
     <div class="container-fluid">
-      <?php
-        if($error){
-          ?><div class="alert alert-danger" role="alert">
+      <?php if ($error) { ?><div class="alert alert-danger" role="alert">
             <?= $error ?>
           </div>
-          <?php
-        }
-          ?>
+          <?php } ?>
         <div class="row mh-100vh">
             <div class="col-10 col-sm-8 col-md-6 col-lg-6 offset-1 offset-sm-2 offset-md-3 offset-lg-0 align-self-center d-lg-flex align-items-lg-center align-self-lg-stretch bg-white p-5 rounded rounded-lg-0 my-5 my-lg-0" id="login-block">
                 <div class="m-auto w-lg-75 w-xl-50">
