@@ -4,21 +4,36 @@ session_start();
 require_once "../src/database/db.php";
 $conn = connectDB();
 
-$result = $conn->query("SELECT COUNT(*) AS total_clients FROM clients");
+// Génération d'un token CSRF s'il n'existe pas déjà
+if (empty($_SESSION["csrf_token"])) {
+    $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+}
+
+// Sécurisation des requêtes SQL par requêtes préparées
+$stmt = $conn->prepare("SELECT COUNT(*) AS total_clients FROM clients");
+$stmt->execute();
+$result = $stmt->get_result();
 $row = $result->fetch_assoc();
 $totalClients = $row["total_clients"];
 
-$result = $conn->query("SELECT COUNT(*) AS total_vehicules FROM vehicules");
+$stmt = $conn->prepare("SELECT COUNT(*) AS total_vehicules FROM vehicules");
+$stmt->execute();
+$result = $stmt->get_result();
 $row = $result->fetch_assoc();
 $totalVehicules = $row["total_vehicules"];
 
-$result = $conn->query("SELECT COUNT(*) AS total_rendezvous FROM rendezvous");
+$stmt = $conn->prepare("SELECT COUNT(*) AS total_rendezvous FROM rendezvous");
+$stmt->execute();
+$result = $stmt->get_result();
 $row = $result->fetch_assoc();
 $totalRendezvous = $row["total_rendezvous"];
 
-$vehiculesResult = $conn->query(
+// Sécurisation des données pour les véhicules
+$vehiculesStmt = $conn->prepare(
     "SELECT v.id, v.marque, v.modele, v.annee, c.nom AS client FROM vehicules v LEFT JOIN clients c ON v.client_id = c.id"
 );
+$vehiculesStmt->execute();
+$vehiculesResult = $vehiculesStmt->get_result();
 $vehicules = $vehiculesResult->fetch_all(MYSQLI_ASSOC);
 ?>
 
@@ -36,18 +51,18 @@ $vehicules = $vehiculesResult->fetch_all(MYSQLI_ASSOC);
     <h1>Tableau de Bord Garage Train</h1>
     <div>
         <h2>Clients</h2>
-        <p>Total Clients: <?= $totalClients ?></p>
+        <p>Total Clients: <?= htmlspecialchars($totalClients) ?></p>
     </div>
     <div>
         <h2>Véhicules</h2>
-        <p>Total Véhicules: <?= $totalVehicules ?></p>
+        <p>Total Véhicules: <?= htmlspecialchars($totalVehicules) ?></p>
     </div>
     <div>
         <h2>Rendez-vous</h2>
-        <p>Total Rendez-vous: <?= $totalRendezvous ?></p>
+        <p>Total Rendez-vous: <?= htmlspecialchars($totalRendezvous) ?></p>
     </div>
     <h2>Véhicules</h2>
-    <p>Total Véhicules: <?= $totalVehicules ?></p>
+    <p>Total Véhicules: <?= htmlspecialchars($totalVehicules) ?></p>
 
     <table class="table table-bordered">
         <thead>
@@ -63,18 +78,19 @@ $vehicules = $vehiculesResult->fetch_all(MYSQLI_ASSOC);
         <tbody>
             <?php foreach ($vehicules as $vehicule): ?>
                 <tr>
-                    <td><?= $vehicule["id"] ?></td>
-                    <td><?= $vehicule["marque"] ?></td>
-                    <td><?= $vehicule["modele"] ?></td>
-                    <td><?= $vehicule["annee"] ?></td>
-                    <td><?= $vehicule["client"] ?></td>
+                    <td><?= htmlspecialchars($vehicule["id"]) ?></td>
+                    <td><?= htmlspecialchars($vehicule["marque"]) ?></td>
+                    <td><?= htmlspecialchars($vehicule["modele"]) ?></td>
+                    <td><?= htmlspecialchars($vehicule["annee"]) ?></td>
+                    <td><?= htmlspecialchars($vehicule["client"]) ?></td>
                     <td>
-                        <a href="modifier.php?id=<?= $vehicule[
-                            "id"
-                        ] ?>">Modifier</a>
-                        <a href="supprimer.php?id=<?= $vehicule[
-                            "id"
-                        ] ?>" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')">Supprimer</a>
+                        <a href="modifier.php?id=<?= htmlspecialchars(
+                            $vehicule["id"]
+                        ) ?>">Modifier</a>
+                        <a href="supprimer.php?id=<?= htmlspecialchars(
+                            $vehicule["id"]
+                        ) ?>"
+                           onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')">Supprimer</a>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -82,6 +98,11 @@ $vehicules = $vehiculesResult->fetch_all(MYSQLI_ASSOC);
     </table>
     <h2>Ajouter un véhicule</h2>
     <form action="ajouter.php" method="POST">
+        <!-- Token CSRF -->
+        <input type="hidden" name="csrf_token" value="<?= $_SESSION[
+            "csrf_token"
+        ] ?>">
+
         <div class="form-group">
             <label for="marque">Marque</label>
             <input type="text" class="form-control" id="marque" name="marque" required>
@@ -99,9 +120,15 @@ $vehicules = $vehiculesResult->fetch_all(MYSQLI_ASSOC);
             <select class="form-control" id="client" name="client_id">
                 <option value="">Sélectionner un client</option>
                 <?php
-                $clientsResult = $conn->query("SELECT id, nom FROM clients");
+                $clientsStmt = $conn->prepare("SELECT id, nom FROM clients");
+                $clientsStmt->execute();
+                $clientsResult = $clientsStmt->get_result();
                 while ($client = $clientsResult->fetch_assoc()) {
-                    echo "<option value=\"{$client["id"]}\">{$client["nom"]}</option>";
+                    echo "<option value=\"" .
+                        htmlspecialchars($client["id"]) .
+                        "\">" .
+                        htmlspecialchars($client["nom"]) .
+                        "</option>";
                 }
                 ?>
             </select>
